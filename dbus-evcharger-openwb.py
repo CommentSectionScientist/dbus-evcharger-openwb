@@ -20,8 +20,8 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), '/opt/victronenergy/d
 from vedbus import VeDbusService
 
 
-class DbusEvseChargerService:
-    def __init__(self, servicename, paths, productname='EVSE-Charger', connection='OpenEVSE JSON RAPI'):
+class DbusOpenWbEvChargerService:
+    def __init__(self, servicename, paths, productname='EV-Charger', connection='EV JSON API'):
         config = self._getConfig()
         deviceinstance = int(config['DEFAULT']['Deviceinstance'])
 
@@ -32,14 +32,12 @@ class DbusEvseChargerService:
 
         paths_wo_unit = [
             '/Status',
-            # value 'state' EVSE State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep,
-            # 255 - disabled old_goecharger 1: charging station ready, no vehicle 2: vehicle loads 3: Waiting for
-            # vehicle 4: Charge finished, vehicle still connected
+            # value 'state' EV State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep,
+            # 255 - disabled
             '/Mode'
         ]
 
-        # get data from go-eCharger
-        data = self._getEvseChargerData()
+        data = self._getOpenWbEvChargerData()
 
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
@@ -94,7 +92,7 @@ class DbusEvseChargerService:
 
         return int(value)
 
-    def _getEvseChargerStatusUrl(self):
+    def _getOpenWbEvChargerStatusUrl(self):
         config = self._getConfig()
         accessType = config['DEFAULT']['AccessType']
 
@@ -105,7 +103,7 @@ class DbusEvseChargerService:
 
         return URL
 
-    def _getEvseChargerMqttPayloadUrl(self, parameter, value):
+    def _getOpenWbEvChargerMqttPayloadUrl(self, parameter, value):
         config = self._getConfig()
         accessType = config['DEFAULT']['AccessType']
 
@@ -116,13 +114,13 @@ class DbusEvseChargerService:
 
         return URL
 
-    def _setEvseChargerValue(self, parameter, value):
-        URL = self._getEvseChargerMqttPayloadUrl(parameter, str(value))
+    def _setOpenWbEvChargerValue(self, parameter, value):
+        URL = self._getOpenWbEvChargerMqttPayloadUrl(parameter, str(value))
         request_data = requests.get(url=URL)
 
         # check for response
         if not request_data:
-            raise ConnectionError("No response from Evse-Charger - %s" % (URL))
+            raise ConnectionError("No response from OpenWB - %s" % (URL))
 
         json_data = request_data.json()
 
@@ -133,16 +131,16 @@ class DbusEvseChargerService:
         if json_data[parameter] == str(value):
             return True
         else:
-            logging.warning("Evse-Charger parameter %s not set to %s" % (parameter, str(value)))
+            logging.warning("OpenWB EV-Charger parameter %s not set to %s" % (parameter, str(value)))
             return False
 
-    def _getEvseChargerData(self):
-        URL = self._getEvseChargerStatusUrl()
+    def _getOpenWbEvChargerData(self):
+        URL = self._getOpenWbEvChargerStatusUrl()
         request_data = requests.get(url=URL)
 
         # check for response
         if not request_data:
-            raise ConnectionError("No response from Evse-Charger - %s" % (URL))
+            raise ConnectionError("No response from OpenWB EV-Charger - %s" % (URL))
 
         json_data = request_data.json()
 
@@ -161,8 +159,7 @@ class DbusEvseChargerService:
 
     def _update(self):
         try:
-            # get data from go-eCharger
-            data = self._getEvseChargerData()
+            data = self._getOpenWbEvChargerData()
 
             # send data to DBus
             voltage = int(data['voltage'])
@@ -193,7 +190,7 @@ class DbusEvseChargerService:
             self._dbusservice['/Mode'] = 0  # Manual, no control
             self._dbusservice['/MCU/Temperature'] = int(data['temp1'])
 
-            # 'state' EVSE State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep, 255 - disabled
+            # 'state' EV State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep, 255 - disabled
             # value 'car' 1: charging station ready, no vehicle 2: vehicle loads 3: Waiting for vehicle 4: Charge
             # finished, vehicle still connected 0:EVdisconnected; 1:Connected; 2:Charging; 3:Charged; 4:Wait sun;
             # 5:Wait RFID; 6:Wait enable; 7:Low SOC; 8:Ground error; 9:Welded contacts error; defaut:Unknown;
@@ -236,13 +233,13 @@ class DbusEvseChargerService:
         logging.info("someone else updated %s to %s" % (path, value))
 
         if path == '/SetCurrent':
-            return self._setEvseChargerValue('SC+', value)
+            return self._setOpenWbEvChargerValue('SC+', value)
         elif path == '/StartStop':
-            return self._setEvseChargerValue('F', '1')  # F1
+            return self._setOpenWbEvChargerValue('F', '1')  # F1
         elif path == '/MaxCurrent':
-            return self._setEvseChargerValue('ama', value)
+            return self._setOpenWbEvChargerValue('ama', value)
         else:
-            logging.info("mapping for evcharger path %s does not exist" % (path))
+            logging.info("mapping for OpenWbEvCharger path %s does not exist" % (path))
             return False
 
 
@@ -272,7 +269,7 @@ def main():
         _s = lambda p, v: (str(v) + 's')
 
         # start our main-service
-        pvac_output = DbusEvseChargerService(
+        pvac_output = DbusOpenWbEvChargerService(
             servicename='com.victronenergy.evcharger',
             paths={
                 '/Ac/Power': {'initial': 0, 'textformat': _w},

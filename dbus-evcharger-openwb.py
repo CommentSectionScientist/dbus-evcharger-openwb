@@ -32,8 +32,9 @@ class DbusEvseChargerService:
 
         paths_wo_unit = [
             '/Status',
-            # value 'state' EVSE State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep, 255 - disabled
-		# old_goecharger 1: charging station ready, no vehicle 2: vehicle loads 3: Waiting for vehicle 4: Charge finished, vehicle still connected
+            # value 'state' EVSE State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep,
+            # 255 - disabled old_goecharger 1: charging station ready, no vehicle 2: vehicle loads 3: Waiting for
+            # vehicle 4: Charge finished, vehicle still connected
             '/Mode'
         ]
 
@@ -164,7 +165,7 @@ class DbusEvseChargerService:
             data = self._getEvseChargerData()
 
             # send data to DBus
-	    voltage = int(data['voltage'])
+            voltage = int(data['voltage'])
             self._dbusservice['/Ac/L1/Power'] = int(data['amp'] * voltage / 1000)
             self._dbusservice['/Ac/L2/Power'] = 0
             self._dbusservice['/Ac/L3/Power'] = 0
@@ -177,7 +178,7 @@ class DbusEvseChargerService:
             else:
                 self._dbusservice['/StartStop'] = 0
 
-#            self._dbusservice['/StartStop'] = int(data['divertmode'])
+            # self._dbusservice['/StartStop'] = int(data['divertmode'])
             self._dbusservice['/SetCurrent'] = int(data['pilot'])
             self._dbusservice['/MaxCurrent'] = 32  # int(data['ama'])
 
@@ -192,9 +193,10 @@ class DbusEvseChargerService:
             self._dbusservice['/Mode'] = 0  # Manual, no control
             self._dbusservice['/MCU/Temperature'] = int(data['temp1'])
 
-	# 'state' EVSE State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep, 255 - disabled
-            # value 'car' 1: charging station ready, no vehicle 2: vehicle loads 3: Waiting for vehicle 4: Charge finished, vehicle still connected
-	# 0:EVdisconnected; 1:Connected; 2:Charging; 3:Charged; 4:Wait sun; 5:Wait RFID; 6:Wait enable; 7:Low SOC; 8:Ground error; 9:Welded contacts error; defaut:Unknown;
+            # 'state' EVSE State - 1 Not Connected - 2 Connected - 3 Charging - 4 Error, 254 - sleep, 255 - disabled
+            # value 'car' 1: charging station ready, no vehicle 2: vehicle loads 3: Waiting for vehicle 4: Charge
+            # finished, vehicle still connected 0:EVdisconnected; 1:Connected; 2:Charging; 3:Charged; 4:Wait sun;
+            # 5:Wait RFID; 6:Wait enable; 7:Low SOC; 8:Ground error; 9:Welded contacts error; defaut:Unknown;
             status = 0
             if int(data['state']) == 1:
                 status = 0
@@ -202,11 +204,11 @@ class DbusEvseChargerService:
                 status = 1
             elif int(data['state']) == 3:
                 status = 2
-            elif int(data['state']) ==4:
+            elif int(data['state']) == 4:
                 status = 8
-            elif int(data['state']) ==255:
+            elif int(data['state']) == 255:
                 status = 6
-            elif int(data['state']) ==254:
+            elif int(data['state']) == 254:
                 status = 4
             self._dbusservice['/Status'] = status
 
@@ -226,7 +228,8 @@ class DbusEvseChargerService:
         except Exception as e:
             logging.critical('Error at %s', '_update', exc_info=e)
 
-        # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
+        # return true, otherwise add_timeout will be removed from GObject - see docs
+        # http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
         return True
 
     def _handlechangedvalue(self, path, value):
@@ -235,7 +238,7 @@ class DbusEvseChargerService:
         if path == '/SetCurrent':
             return self._setEvseChargerValue('SC+', value)
         elif path == '/StartStop':
-            return self._setEvseChargerValue('F', '1') #F1
+            return self._setEvseChargerValue('F', '1')  # F1
         elif path == '/MaxCurrent':
             return self._setEvseChargerValue('ama', value)
         else:

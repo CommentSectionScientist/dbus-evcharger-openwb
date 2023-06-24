@@ -178,7 +178,7 @@ class DbusEvseChargerService:
             else:
                 self._dbusservice['/StartStop'] = 0
 
-            #            self._dbusservice['/StartStop'] = int(data['divertmode'])
+            # self._dbusservice['/StartStop'] = int(data['divertmode'])
             self._dbusservice['/SetCurrent'] = int(data['pilot'])
             self._dbusservice['/MaxCurrent'] = 32  # int(data['ama'])
 
